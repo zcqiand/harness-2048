@@ -43,6 +43,11 @@ describe("isWellFormedRecord", () => {
     expect(isWellFormedRecord(rec({ moves: "upleft" as unknown as Direction[] }))).toBe(false);
   });
 
+  it("moves 含非 Direction 元素（如 [42]）判定不过（replay 白屏事故回归）", () => {
+    expect(isWellFormedRecord(rec({ moves: [42] as unknown as Direction[] }))).toBe(false);
+    expect(isWellFormedRecord(rec({ moves: ["up", 42] as unknown as Direction[] }))).toBe(false);
+  });
+
   it("非对象/null 判定不过", () => {
     expect(isWellFormedRecord(null)).toBe(false);
     expect(isWellFormedRecord(42)).toBe(false);

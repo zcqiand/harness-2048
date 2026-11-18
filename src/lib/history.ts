@@ -1,5 +1,6 @@
 /** 本地成绩册与续玩态：localStorage 注入式读写（测试传假件），损坏 JSON 回退空值不抛。 */
 
+import { DIRECTIONS } from "./contract";
 import type { Direction } from "./contract";
 import { puzzleIdFor } from "./daily";
 
@@ -68,11 +69,12 @@ export function streak(records: RunRecord[], today: Date): number {
   return count;
 }
 
-/** 读续玩态；缺失/损坏回 null。 */
+/** 读续玩态；缺失/损坏回 null。moves 存在但含非法方向元素同样回 null（replay 会抛白屏）。 */
 export function loadRun(storage: Storage): SavedRun | null {
   const v = readJson<SavedRun>(storage, RUN_KEY);
   if (v === null || typeof v !== "object") return null;
   if (typeof v.puzzleId !== "string" || !Array.isArray(v.moves)) return null;
+  if (!v.moves.every((m) => DIRECTIONS.includes(m))) return null;
   return v;
 }
 

@@ -75,6 +75,17 @@ describe("history", () => {
     expect(loadRun(storage)).toBeNull();
   });
 
+  it("loadRun：moves 含非 Direction 元素（如 [42]）回 null 不抛（replay 白屏事故回归）", () => {
+    const storage = fakeStorage({
+      "h2048.v1.run": JSON.stringify({ puzzleId: "20261118", moves: [42] }),
+    });
+    expect(loadRun(storage)).toBeNull();
+    const mixed = fakeStorage({
+      "h2048.v1.run": JSON.stringify({ puzzleId: "20261118", moves: ["up", 42] }),
+    });
+    expect(loadRun(mixed)).toBeNull();
+  });
+
   it("winSeen 往返：saveWinSeen→loadWinSeen 一致；缺失/损坏回退 null", () => {
     const storage = fakeStorage();
     expect(loadWinSeen(storage)).toBeNull();
