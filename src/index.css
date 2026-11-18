@@ -298,7 +298,7 @@ body {
   box-shadow: 0 0 0 4px var(--race-red) inset;
 }
 
-/* ------------------------- 完赛占位卡 ------------------------- */
+/* ------------------------- 完赛回看页 ------------------------- */
 
 .finished-card {
   margin-top: 1rem;
@@ -320,6 +320,154 @@ body {
   margin-top: 0.6rem;
   font-size: 0.875rem;
   color: var(--ink-soft);
+}
+
+.review-page {
+  margin-top: 1rem;
+  border: 2px solid var(--ink);
+  border-top: 6px solid var(--race-red);
+  background: var(--paper);
+  padding: 1rem 0.75rem 1.25rem;
+  text-align: center;
+}
+
+.review-headline {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.review-meta {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-family: var(--font-serif);
+  letter-spacing: 0.06em;
+}
+
+.review-page .board-wrap {
+  margin-top: 0.9rem;
+}
+
+/* ------------------------- 回放条 ------------------------- */
+
+.replay-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.replay-btn {
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.replay-btn:hover:not(:disabled) {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.replay-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.replay-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--race-red);
+}
+
+.replay-step {
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  min-width: 4.2rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ------------------------- 剪报成绩册 ------------------------- */
+
+.records-book {
+  margin-top: 1.25rem;
+  border-top: 3px double var(--ink);
+  padding-top: 0.75rem;
+}
+
+.records-headline {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-align: center;
+}
+
+.records-stats {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.records-empty {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-family: var(--font-serif);
+}
+
+.records-list {
+  list-style: none;
+  margin-top: 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 剪报卡：纸片微斜贴册（隔张反向），题号红字居左、三项成绩居右 */
+.record-clip {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  padding: 0.45rem 0.6rem;
+  box-shadow: 2px 2px 0 rgba(28, 27, 24, 0.15);
+  transform: rotate(-0.4deg);
+}
+
+.record-clip:nth-child(even) {
+  transform: rotate(0.4deg);
+}
+
+.clip-no {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--race-red);
+  font-size: 1rem;
+}
+
+.clip-stat {
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.record-clip .clip-stat:first-of-type {
+  margin-left: auto;
 }
 
 /* ------------------------- 胜利横幅（号外） ------------------------- */

@@ -1,8 +1,10 @@
-/** 页面壳：对局状态机（进行中/完赛占位）——mount 恢复残局、键盘四向+触屏滑动走子、每步落续玩态、死局落册。 */
+/** 页面壳：对局状态机（进行中/完赛回看）——mount 恢复残局、键盘四向+触屏滑动走子、每步落续玩态、死局落册切回看（回放+剪报成绩册）。 */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import GameBoard from "./components/GameBoard";
 import type { BoardMove } from "./components/GameBoard";
+import RecordsBook from "./components/RecordsBook";
+import ReviewPage from "./components/ReviewPage";
 import ScoreBar from "./components/ScoreBar";
 import WinBanner from "./components/WinBanner";
 import type { Direction } from "./lib/contract";
@@ -193,6 +195,8 @@ export default function App() {
   );
   const streakDays = streak(records, new Date());
   const playing = phase === "playing";
+  // 完赛分支计分条与回看页同源：当日完赛成绩（落册记录），不是 initialState 快照的 0
+  const finishedRecord = playing ? null : (records.find((r) => r.puzzleId === puzzleId) ?? null);
 
   return (
     <main className="page">
@@ -203,7 +207,7 @@ export default function App() {
 
       <ScoreBar
         puzzleId={puzzleId}
-        score={game.state.score}
+        score={playing ? game.state.score : (finishedRecord?.score ?? 0)}
         best={best}
         streakDays={streakDays}
         canUndo={playing && game.moves.length > 0}
@@ -221,10 +225,15 @@ export default function App() {
           </div>
           <p className="hint">方向键 / 触屏滑动走子 · 合成 2048 出号外可继续冲分</p>
         </>
+      ) : finishedRecord !== null ? (
+        <>
+          <ReviewPage puzzleId={puzzleId} record={finishedRecord} />
+          <RecordsBook records={records} streakDays={streakDays} />
+        </>
       ) : (
         <section className="finished-card">
           <h2 className="finished-headline">本日已完赛</h2>
-          <p className="finished-sub">回看功能下一任务开放</p>
+          <p className="finished-sub">成绩册加载异常——请刷新页面</p>
         </section>
       )}
 
