@@ -1,1 +1,403 @@
 @import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * 号外风 token ——「赛事号外/竞赛日历」：新闻纸底 + 墨黑 + 赛程红，衬线标题。
+ * 克制不花哨，个性在「同题竞速」的仪式感。
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --paper: #f5f1e6; /* 新闻纸底 */
+  --paper-deep: #ece5d1; /* 纸面凹陷（棋盘底/空格） */
+  --ink: #1c1b18; /* 墨黑 */
+  --ink-soft: #5c574b; /* 淡墨（辅助文字） */
+  --race-red: #c53030; /* 赛程红 */
+  --race-red-deep: #9b2424; /* 深红（按压/边线） */
+  --font-serif: Georgia, "Times New Roman", "STZhongsong", "SimSun", serif;
+}
+
+body {
+  background-color: var(--paper);
+  /* 新闻纸质感：极淡横向细纹 */
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(28, 27, 24, 0.025) 0px,
+    rgba(28, 27, 24, 0.025) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  color: var(--ink);
+}
+
+/* ------------------------- 页面骨架 / 报头 ------------------------- */
+
+.page {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.masthead-kicker {
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  letter-spacing: 0.35em;
+  color: var(--ink-soft);
+  border-top: 3px double var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 0.3rem 0;
+  text-align: center;
+}
+
+.masthead-title {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.12em;
+  margin-top: 0.75rem;
+}
+
+/* ------------------------- 计分条 ------------------------- */
+
+.score-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 0.5rem;
+}
+
+.puzzle-no {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--race-red);
+  letter-spacing: 0.02em;
+  align-self: center;
+  padding-right: 0.6rem;
+  border-right: 1px dashed var(--ink-soft);
+}
+
+.score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.4rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--ink);
+  padding: 0.25rem 0.45rem;
+}
+
+.score-label {
+  font-family: var(--font-serif);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.score-value {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.undo-btn {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  color: var(--paper);
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.undo-btn:hover:not(:disabled) {
+  background: var(--race-red);
+  border-color: var(--race-red);
+}
+
+.undo-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ------------------------- 棋盘 ------------------------- */
+
+.board-wrap {
+  margin-top: 1rem;
+  touch-action: none; /* 触屏滑动走子，不滚页 */
+  user-select: none;
+}
+
+.board-frame {
+  border: 3px solid var(--ink);
+  background: var(--paper-deep);
+  padding: 0.4rem;
+  box-shadow: 4px 4px 0 rgba(28, 27, 24, 0.18);
+}
+
+.board-grid {
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* 滑动方向整盘 120ms 微位移过渡（key 按 move 序号重触发） */
+.board-slide-up {
+  animation: slide-up 120ms ease;
+}
+.board-slide-down {
+  animation: slide-down 120ms ease;
+}
+.board-slide-left {
+  animation: slide-left 120ms ease;
+}
+.board-slide-right {
+  animation: slide-right 120ms ease;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slide-down {
+  from {
+    transform: translateY(-10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slide-left {
+  from {
+    transform: translateX(10px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slide-right {
+  from {
+    transform: translateX(-10px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.cell-empty {
+  aspect-ratio: 1;
+  background: rgba(28, 27, 24, 0.07);
+  border: 1px solid rgba(28, 27, 24, 0.15);
+}
+
+.tile {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  border: 1.5px solid var(--ink);
+  font-size: 1.3rem;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+
+/* 新生成/合并的瓦片：120ms 弹跳 */
+.tile-pop {
+  animation: tile-pop 120ms ease;
+}
+
+@keyframes tile-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 数字瓦片按值分档底色：纸面 → 赛红 → 墨黑，低值墨字高值纸字 */
+.tile[data-v="2"] {
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1.6rem;
+}
+.tile[data-v="4"] {
+  background: #eadfc6;
+  color: var(--ink);
+  font-size: 1.6rem;
+}
+.tile[data-v="8"] {
+  background: #ddc98f;
+  color: var(--ink);
+  font-size: 1.5rem;
+}
+.tile[data-v="16"] {
+  background: #e0a458;
+  color: var(--ink);
+  font-size: 1.5rem;
+}
+.tile[data-v="32"] {
+  background: #d97b4a;
+  color: var(--paper);
+  font-size: 1.4rem;
+}
+.tile[data-v="64"] {
+  background: var(--race-red);
+  color: var(--paper);
+  font-size: 1.4rem;
+}
+.tile[data-v="128"] {
+  background: var(--race-red-deep);
+  color: var(--paper);
+  font-size: 1.25rem;
+  box-shadow: 0 0 0 2px var(--paper) inset;
+}
+.tile[data-v="256"] {
+  background: #3a3630;
+  color: var(--paper);
+  font-size: 1.25rem;
+  box-shadow: 0 0 0 2px var(--race-red) inset;
+}
+.tile[data-v="512"] {
+  background: #2a2723;
+  color: var(--paper);
+  font-size: 1.15rem;
+  box-shadow: 0 0 0 3px var(--race-red) inset;
+}
+.tile[data-v="1024"] {
+  background: var(--ink);
+  color: var(--race-red);
+  font-size: 1.05rem;
+  box-shadow: 0 0 0 3px var(--race-red) inset;
+}
+.tile[data-v="2048"] {
+  background: var(--race-red);
+  color: var(--paper);
+  font-size: 1.05rem;
+  box-shadow: 0 0 0 4px var(--ink) inset;
+}
+/* 4096+ 榜首档：全墨底描红线（其余未列值吃 .tile 基础字号 1.3rem） */
+.tile[data-v]:not([data-v="2"]):not([data-v="4"]):not([data-v="8"]):not([data-v="16"]):not([data-v="32"]):not([data-v="64"]):not([data-v="128"]):not([data-v="256"]):not([data-v="512"]):not([data-v="1024"]):not([data-v="2048"]) {
+  background: var(--ink);
+  color: var(--race-red);
+  box-shadow: 0 0 0 4px var(--race-red) inset;
+}
+
+/* ------------------------- 完赛占位卡 ------------------------- */
+
+.finished-card {
+  margin-top: 1rem;
+  border: 2px solid var(--ink);
+  border-top: 6px solid var(--race-red);
+  background: var(--paper);
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.finished-headline {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.finished-sub {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+/* ------------------------- 胜利横幅（号外） ------------------------- */
+
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 27, 24, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 20;
+}
+
+.win-card {
+  width: 100%;
+  max-width: 22rem;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  outline: 2px solid var(--paper);
+  box-shadow: 6px 6px 0 rgba(28, 27, 24, 0.4);
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  animation: tile-pop 120ms ease;
+}
+
+.win-extra {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: var(--paper);
+  background: var(--race-red);
+  padding: 0.2rem 0.6rem;
+}
+
+.win-headline {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.win-sub {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.win-btn {
+  margin-top: 1.1rem;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  color: var(--paper);
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.win-btn:hover {
+  background: var(--race-red);
+  border-color: var(--race-red);
+}
+
+/* ------------------------- 操作提示 ------------------------- */
+
+.hint {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  font-family: var(--font-serif);
+  letter-spacing: 0.08em;
+}

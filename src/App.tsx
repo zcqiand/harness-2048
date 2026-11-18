@@ -1,37 +1,236 @@
-import { GRID_SIZE, emptyBoard } from "./lib/board";
+/** 页面壳：对局状态机（进行中/完赛占位）——mount 恢复残局、键盘四向+触屏滑动走子、每步落续玩态、死局落册。 */
 
-/** 页面壳：2048 棋盘骨架。滑动/合并逻辑随 ch7 章节灌入。 */
+import { useCallback, useEffect, useRef, useState } from "react";
+import GameBoard from "./components/GameBoard";
+import type { BoardMove } from "./components/GameBoard";
+import ScoreBar from "./components/ScoreBar";
+import WinBanner from "./components/WinBanner";
+import type { Direction } from "./lib/contract";
+import { currentPuzzleId } from "./lib/daily";
+import { applyMove, initialState, maxTile, replay } from "./lib/game";
+import type { GameState } from "./lib/game";
+import {
+  bestScore,
+  clearRun,
+  loadRecords,
+  loadRun,
+  loadWinSeen,
+  saveRecord,
+  saveRun,
+  saveWinSeen,
+  streak,
+} from "./lib/history";
+import type { RunRecord } from "./lib/history";
+
+type Phase = "playing" | "finished";
+
+interface GameSnapshot {
+  state: GameState;
+  moves: Direction[];
+}
+
+interface Boot {
+  phase: Phase;
+  puzzleId: string;
+  game: GameSnapshot;
+  records: RunRecord[];
+}
+
+const storage: Storage = window.localStorage;
+
+/**
+ * mount 引导：有进行中残局（不论题号日，跨午夜残局继续）→replay 恢复；
+ * 无残局→今日已完赛→完赛占位；否则新局。恢复出死局（上次关页前刚死）→立即落册收口。
+ */
+function bootstrap(): Boot {
+  const records = loadRecords(storage);
+  const run = loadRun(storage);
+  if (run !== null) {
+    const state = replay(run.puzzleId, run.moves);
+    const game: GameSnapshot = { state, moves: run.moves };
+    if (state.dead) {
+      finalizeRun(run.puzzleId, state, run.moves);
+      return {
+        phase: "finished",
+        puzzleId: run.puzzleId,
+        game,
+        records: loadRecords(storage),
+      };
+    }
+    return { phase: "playing", puzzleId: run.puzzleId, game, records };
+  }
+  const puzzleId = currentPuzzleId();
+  if (records.some((r) => r.puzzleId === puzzleId)) {
+    return {
+      phase: "finished",
+      puzzleId,
+      game: { state: initialState(puzzleId), moves: [] },
+      records,
+    };
+  }
+  clearRun(storage); // 新局前清残（含损坏态）
+  return {
+    phase: "playing",
+    puzzleId,
+    game: { state: initialState(puzzleId), moves: [] },
+    records,
+  };
+}
+
+/** 死局收口：成绩落册（按 puzzleId upsert）+ 清续玩态。 */
+function finalizeRun(puzzleId: string, state: GameState, moves: Direction[]): void {
+  saveRecord(storage, {
+    puzzleId,
+    score: state.score,
+    maxTile: maxTile(state),
+    moves,
+    finishedAt: Date.now(),
+  });
+  clearRun(storage);
+}
+
+const KEY_TO_DIR: Record<string, Direction> = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+};
+
+/** 键盘四向 + 触屏滑动判向的最小位移（px）。 */
+const SWIPE_THRESHOLD = 24;
+
 export default function App() {
-  const board = emptyBoard();
+  const [boot] = useState(bootstrap);
+  const [phase, setPhase] = useState<Phase>(boot.phase);
+  const [puzzleId] = useState(boot.puzzleId);
+  const [game, setGame] = useState<GameSnapshot>(boot.game);
+  const [records, setRecords] = useState<RunRecord[]>(boot.records);
+  const [lastMove, setLastMove] = useState<BoardMove | null>(null);
+  const [showWin, setShowWin] = useState(false);
+
+  // 走子处理读最新局面的镜像（handler 内同步计算，不在 updater 里做副作用）
+  const gameRef = useRef(game);
+  gameRef.current = game;
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+
+  /** 走一步：无效移动无副作用；有效步写续玩态；死局立即落册切完赛。 */
+  const handleMove = useCallback(
+    (dir: Direction) => {
+      if (phaseRef.current !== "playing") return;
+      const cur = gameRef.current;
+      const { state: next, moved } = applyMove(cur.state, dir, puzzleId);
+      if (!moved) return; // 无效移动不弹提示、不消耗生成
+      const moves = [...cur.moves, dir];
+      saveRun(storage, { puzzleId, moves });
+      setGame({ state: next, moves });
+      setLastMove({ dir, seq: moves.length });
+      if (next.dead) {
+        finalizeRun(puzzleId, next, moves);
+        setRecords(loadRecords(storage));
+        setPhase("finished");
+      }
+    },
+    [puzzleId],
+  );
+
+  /** 悔棋：走子日志弹末条 → replay 重放出完全相同的牌 → 续写续玩态。 */
+  const handleUndo = useCallback(() => {
+    if (phaseRef.current !== "playing") return;
+    const cur = gameRef.current;
+    if (cur.moves.length === 0) return;
+    const moves = cur.moves.slice(0, -1);
+    const state = replay(puzzleId, moves);
+    saveRun(storage, { puzzleId, moves });
+    setGame({ state, moves });
+    setLastMove(null);
+  }, [puzzleId]);
+
+  // 键盘四向（阻止方向键滚页）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const dir = KEY_TO_DIR[e.key];
+      if (dir === undefined) return;
+      e.preventDefault();
+      handleMove(dir);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleMove]);
+
+  // 触屏滑动（位移阈值 + 主轴判向；无效滑动不触发）
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  }, []);
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (start === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_THRESHOLD) return;
+      if (Math.abs(dx) > Math.abs(dy)) handleMove(dx > 0 ? "right" : "left");
+      else handleMove(dy > 0 ? "down" : "up");
+    },
+    [handleMove],
+  );
+
+  // 胜利横幅：won 首次出现且当日未看过 → 弹一次；winseen 即刻落盘防刷新重弹
+  useEffect(() => {
+    if (phase !== "playing" || !game.state.won) return;
+    if (loadWinSeen(storage) === puzzleId) return;
+    saveWinSeen(storage, puzzleId);
+    setShowWin(true);
+  }, [phase, game.state.won, puzzleId]);
+
+  const best = Math.max(
+    bestScore(records),
+    phase === "playing" ? game.state.score : 0,
+  );
+  const streakDays = streak(records, new Date());
+  const playing = phase === "playing";
+
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-bold mb-4">2048</h1>
-      <p className="text-sm text-gray-500 mb-4">
-        骨架壳：规则契约与滑动合并逻辑随章节灌入
-      </p>
-      <div
-        aria-label="board"
-        className="grid gap-2 bg-gray-300 p-2 rounded-lg border-4 border-gray-400"
-        style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 64px)`,
-          gridTemplateRows: `repeat(${GRID_SIZE}, 64px)`,
-        }}
-      >
-        {board.flatMap((row, y) =>
-          row.map((cell, x) => (
-            <div
-              key={`${x}-${y}`}
-              className={
-                cell === 0
-                  ? "bg-gray-200 rounded"
-                  : "bg-yellow-400 rounded font-bold flex items-center justify-center"
-              }
-            >
-              {cell === 0 ? "" : cell}
-            </div>
-          )),
-        )}
-      </div>
+    <main className="page">
+      <header>
+        <p className="masthead-kicker">每日同题 · 种子局</p>
+        <h1 className="masthead-title">2048 号外</h1>
+      </header>
+
+      <ScoreBar
+        puzzleId={puzzleId}
+        score={game.state.score}
+        best={best}
+        streakDays={streakDays}
+        canUndo={playing && game.moves.length > 0}
+        onUndo={handleUndo}
+      />
+
+      {playing ? (
+        <>
+          <div
+            className="board-wrap"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            <GameBoard cells={game.state.cells} lastMove={lastMove} />
+          </div>
+          <p className="hint">方向键 / 触屏滑动走子 · 合成 2048 出号外可继续冲分</p>
+        </>
+      ) : (
+        <section className="finished-card">
+          <h2 className="finished-headline">本日已完赛</h2>
+          <p className="finished-sub">回看功能下一任务开放</p>
+        </section>
+      )}
+
+      {showWin && (
+        <WinBanner puzzleId={puzzleId} onDismiss={() => setShowWin(false)} />
+      )}
     </main>
   );
 }
