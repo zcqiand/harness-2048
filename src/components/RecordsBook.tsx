@@ -10,8 +10,8 @@ interface RecordsBookProps {
 }
 
 export default function RecordsBook({ records, streakDays }: RecordsBookProps) {
-  // 剪报按题号倒序贴册（puzzleId=YYYYMMDD 字典序即时间序）
-  const clips = records.slice().sort((a, b) => (a.puzzleId < b.puzzleId ? 1 : -1));
+  // 剪报按题号倒序贴册（puzzleId=YYYYMMDD 等长数字串，字典序即时间序）
+  const clips = records.slice().sort((a, b) => b.puzzleId.localeCompare(a.puzzleId));
 
   return (
     <section className="records-book" aria-label="records-book">

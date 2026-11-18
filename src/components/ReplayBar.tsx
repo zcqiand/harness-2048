@@ -5,7 +5,7 @@ interface ReplayBarProps {
   totalSteps: number;
   /** 当前步序（0=初始盘面，N=终局）。 */
   step: number;
-  /** 步进回调（父层负责夹取合法区间）。 */
+  /** 步进回调；两按钮在 0/N 两端各自禁用、滑条取值被 min/max 夹取，步序恒落 0..N。 */
   onStep: (step: number) => void;
 }
 

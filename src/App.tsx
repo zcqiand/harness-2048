@@ -23,6 +23,7 @@ import {
   streak,
 } from "./lib/history";
 import type { RunRecord } from "./lib/history";
+import { sanitizeRecords } from "./records-guard";
 
 type Phase = "playing" | "finished";
 
@@ -41,11 +42,20 @@ interface Boot {
 const storage: Storage = window.localStorage;
 
 /**
+ * 读册 + 形状过滤：loadRecords 只验数组不验单条，缺 moves/score 的损坏记录
+ * 会在渲染层抛 TypeError 白屏——所有消费点（回看页/成绩册/streak/best）只吃良构记录。
+ * 当日完赛记录畸形时 finishedRecord 落空 → 「成绩册加载异常」防御分支兜底。
+ */
+function loadSanitizedRecords(): RunRecord[] {
+  return sanitizeRecords(loadRecords(storage));
+}
+
+/**
  * mount 引导：有进行中残局（不论题号日，跨午夜残局继续）→replay 恢复；
- * 无残局→今日已完赛→完赛占位；否则新局。恢复出死局（上次关页前刚死）→立即落册收口。
+ * 无残局→今日已完赛→完赛回看；否则新局。恢复出死局（上次关页前刚死）→立即落册收口。
  */
 function bootstrap(): Boot {
-  const records = loadRecords(storage);
+  const records = loadSanitizedRecords();
   const run = loadRun(storage);
   if (run !== null) {
     const state = replay(run.puzzleId, run.moves);
@@ -56,7 +66,7 @@ function bootstrap(): Boot {
         phase: "finished",
         puzzleId: run.puzzleId,
         game,
-        records: loadRecords(storage),
+        records: loadSanitizedRecords(),
       };
     }
     return { phase: "playing", puzzleId: run.puzzleId, game, records };
@@ -129,7 +139,7 @@ export default function App() {
       setLastMove({ dir, seq: moves.length });
       if (next.dead) {
         finalizeRun(puzzleId, next, moves);
-        setRecords(loadRecords(storage));
+        setRecords(loadSanitizedRecords());
         setPhase("finished");
       }
     },
