@@ -7,7 +7,7 @@
 | 绑定章节 | ch7 游戏实现 / ch18 打包上线 / ch19 广告 SDK / ch21 线上 bug 修复 |
 | 技术栈 | TypeScript + React 19 + Tailwind 4 + Vite |
 | 测试 | vitest（无 Key 无网全绿） |
-| 状态 | 骨架（2026-11-18 建仓；核心玩法随 ch7 章节灌入） |
+| 状态 | 可玩（2026-11-18 每日同题种子局收官：完整玩法+悔棋+完赛回放+剪报成绩册） |
 
 ```bash
 npm install --registry=https://registry.npmmirror.com
