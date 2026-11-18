@@ -39,15 +39,40 @@ interface Boot {
   records: RunRecord[];
 }
 
-const storage: Storage = window.localStorage;
+/**
+ * 存储访问惰性化：存储被禁环境（隐私模式/企业策略/内嵌 webview）在模块求值期
+ * 碰 window.localStorage 即抛 SecurityError 整页白屏——改首次使用时 try/catch，
+ * 失败回内存假件（同 Storage 形状，会话内降级为不落盘，页面保持可用）。
+ */
+let memoryStorage: Storage | null = null;
+function getStorage(): Storage {
+  try {
+    return window.localStorage;
+  } catch {
+    if (memoryStorage === null) {
+      const map = new Map<string, string>();
+      memoryStorage = {
+        length: map.size,
+        clear: () => map.clear(),
+        getItem: (k: string) => (map.has(k) ? (map.get(k) as string) : null),
+        key: (i: number) => [...map.keys()][i] ?? null,
+        removeItem: (k: string) => void map.delete(k),
+        setItem: (k: string, v: string) => void map.set(k, v),
+      } as Storage;
+    }
+    return memoryStorage;
+  }
+}
 
 /**
- * 读册 + 形状过滤：loadRecords 只验数组不验单条，缺 moves/score 的损坏记录
- * 会在渲染层抛 TypeError 白屏——所有消费点（回看页/成绩册/streak/best）只吃良构记录。
- * 当日完赛记录畸形时 finishedRecord 落空 → 「成绩册加载异常」防御分支兜底。
+ * 读册 + 形状过滤：loadRecords 只验数组不验单条，缺 moves/score 或 moves 含
+ * 非法方向元素的损坏记录会在渲染层抛 TypeError 白屏——守卫在此滤掉，
+ * 所有消费点（回看页/成绩册/streak/best）只见良构记录。
+ * 良构记录被滤后当日完赛记录理应存在；「成绩册加载异常」分支仅为将来
+ * 写入路径异常的兜底，正常读册路径不可达。
  */
 function loadSanitizedRecords(): RunRecord[] {
-  return sanitizeRecords(loadRecords(storage));
+  return sanitizeRecords(loadRecords(getStorage()));
 }
 
 /**
@@ -56,7 +81,7 @@ function loadSanitizedRecords(): RunRecord[] {
  */
 function bootstrap(): Boot {
   const records = loadSanitizedRecords();
-  const run = loadRun(storage);
+  const run = loadRun(getStorage());
   if (run !== null) {
     const state = replay(run.puzzleId, run.moves);
     const game: GameSnapshot = { state, moves: run.moves };
@@ -80,7 +105,7 @@ function bootstrap(): Boot {
       records,
     };
   }
-  clearRun(storage); // 新局前清残（含损坏态）
+  clearRun(getStorage()); // 新局前清残（含损坏态）
   return {
     phase: "playing",
     puzzleId,
@@ -91,14 +116,14 @@ function bootstrap(): Boot {
 
 /** 死局收口：成绩落册（按 puzzleId upsert）+ 清续玩态。 */
 function finalizeRun(puzzleId: string, state: GameState, moves: Direction[]): void {
-  saveRecord(storage, {
+  saveRecord(getStorage(), {
     puzzleId,
     score: state.score,
     maxTile: maxTile(state),
     moves,
     finishedAt: Date.now(),
   });
-  clearRun(storage);
+  clearRun(getStorage());
 }
 
 const KEY_TO_DIR: Record<string, Direction> = {
@@ -134,7 +159,7 @@ export default function App() {
       const { state: next, moved } = applyMove(cur.state, dir, puzzleId);
       if (!moved) return; // 无效移动不弹提示、不消耗生成
       const moves = [...cur.moves, dir];
-      saveRun(storage, { puzzleId, moves });
+      saveRun(getStorage(), { puzzleId, moves });
       setGame({ state: next, moves });
       setLastMove({ dir, seq: moves.length });
       if (next.dead) {
@@ -153,14 +178,15 @@ export default function App() {
     if (cur.moves.length === 0) return;
     const moves = cur.moves.slice(0, -1);
     const state = replay(puzzleId, moves);
-    saveRun(storage, { puzzleId, moves });
+    saveRun(getStorage(), { puzzleId, moves });
     setGame({ state, moves });
     setLastMove(null);
   }, [puzzleId]);
 
-  // 键盘四向（阻止方向键滚页）
+  // 键盘四向（playing 才拦截；完赛回看页方向键让位浏览器滚页）
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (phaseRef.current !== "playing") return;
       const dir = KEY_TO_DIR[e.key];
       if (dir === undefined) return;
       e.preventDefault();
@@ -194,8 +220,8 @@ export default function App() {
   // 胜利横幅：won 首次出现且当日未看过 → 弹一次；winseen 即刻落盘防刷新重弹
   useEffect(() => {
     if (phase !== "playing" || !game.state.won) return;
-    if (loadWinSeen(storage) === puzzleId) return;
-    saveWinSeen(storage, puzzleId);
+    if (loadWinSeen(getStorage()) === puzzleId) return;
+    saveWinSeen(getStorage(), puzzleId);
     setShowWin(true);
   }, [phase, game.state.won, puzzleId]);
 
@@ -241,6 +267,7 @@ export default function App() {
           <RecordsBook records={records} streakDays={streakDays} />
         </>
       ) : (
+        /* 纵深防御兜底：正常读册路径守卫滤畸形记录后本分支不可达——仅覆盖将来写入路径异常（写侧尚未净化）。 */
         <section className="finished-card">
           <h2 className="finished-headline">本日已完赛</h2>
           <p className="finished-sub">成绩册加载异常——请刷新页面</p>
