@@ -1,4 +1,5 @@
 /** 棋盘组件：4×4 号外风网格。数字瓦片按值分档底色；滑动=整盘 120ms 微位移，合并/新生成=120ms 弹跳。 */
+// @impl M05.F01.I02 — GameBoard 棋盘渲染（function-tree M05.F01）
 
 import { useEffect, useRef } from "react";
 import { GRID_SIZE } from "../lib/contract";

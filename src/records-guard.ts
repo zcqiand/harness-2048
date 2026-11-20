@@ -1,4 +1,5 @@
 /** 完赛记录形状守卫：loadRecords 只验数组不验单条，缺 moves/score、moves 含非法元素的畸形记录会在渲染层抛 TypeError 白屏——读册后过滤一次，渲染层只见良构记录。 */
+// @impl M04.F03.I01 — isWellFormedRecord/sanitizeRecords（function-tree M04.F03）
 
 import { DIRECTIONS } from "./lib/contract";
 import type { RunRecord } from "./lib/history";

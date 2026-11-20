@@ -1,4 +1,5 @@
 /** 规则契约——2048 游戏的常量与类型单源。引擎（game.ts）在此契约之上实现。 */
+// @impl M01.F02.I01 — WIN_TILE/SPAWN_VALUES/DIRECTIONS（function-tree M01.F02）
 
 import { GRID_SIZE } from "./board";
 

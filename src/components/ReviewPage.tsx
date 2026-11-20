@@ -1,4 +1,5 @@
 /** 完赛回看页：标题「第 #YYYYMMDD 期 · 完赛」+ 最终盘面静态渲染 + 本局成绩 + 回放条步进。帧=replay 前缀派生（moves.slice(0, i) 重放），与逐步走子同一语义，不缓存不落盘。 */
+// @impl M05.F02.I01 — ReviewPage 完赛回看页（function-tree M05.F02）
 
 import { useState } from "react";
 import GameBoard from "./GameBoard";

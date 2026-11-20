@@ -1,4 +1,5 @@
 /** 胜利横幅：合成 2048 首次达成弹一次的「号外」卡（弹次由 App 侧 winseen 保证）。合成非终态，关掉继续冲分。 */
+// @impl M05.F03.I01 — WinBanner 号外卡（function-tree M05.F03）
 
 interface WinBannerProps {
   puzzleId: string;

@@ -1,4 +1,5 @@
 /** 每日题号：UTC+8 日界（凌晨零点换题），同一天全球同题。 */
+// @impl M02.F01.I01 — puzzleIdFor/currentPuzzleId（function-tree M02.F01）
 
 /** 把时刻归到 UTC+8 日界，产出 YYYYMMDD 题号（无横线）。 */
 export function puzzleIdFor(date: Date): string {

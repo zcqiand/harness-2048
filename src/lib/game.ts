@@ -1,4 +1,5 @@
 /** 棋盘滑动/合并纯逻辑 + 整盘游戏引擎（GameState/applyMove/replay/isDead/maxTile）。 */
+// @impl M03.F01.I01 slideLine；M03.F02.I01 initialState / I02 applyMove / I03 replay / I04 isDead+maxTile / I05 pickSpawnValue（function-tree M03）
 
 import { emptyBoard } from "./board";
 import { SPAWN_VALUES, WIN_TILE } from "./contract";

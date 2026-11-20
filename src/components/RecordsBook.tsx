@@ -1,4 +1,5 @@
 /** 剪报成绩册：头部三指标（个人最佳/连胜/总局数）+ 历史完赛按题号倒序的剪报卡（题号/分数/最大块/步数）。 */
+// @impl M05.F02.I03 — RecordsBook 剪报成绩册（function-tree M05.F02）
 
 import { bestScore } from "../lib/history";
 import type { RunRecord } from "../lib/history";

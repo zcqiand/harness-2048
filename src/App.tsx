@@ -1,4 +1,5 @@
 /** 页面壳：对局状态机（进行中/完赛回看）——mount 恢复残局、键盘四向+触屏滑动走子、每步落续玩态、死局落册切回看（回放+剪报成绩册）。 */
+// @impl M05.F01.I01 — App 对局状态机页面（function-tree M05.F01）
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import GameBoard from "./components/GameBoard";

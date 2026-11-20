@@ -1,4 +1,5 @@
 /** 本地成绩册与续玩态：localStorage 注入式读写（测试传假件），损坏 JSON 回退空值不抛。 */
+// @impl M04.F01.I01 成绩册存取/指标；M04.F02.I01 loadRun/saveRun/clearRun / I02 saveWinSeen/loadWinSeen（function-tree M04）
 
 import { DIRECTIONS } from "./contract";
 import type { Direction } from "./contract";

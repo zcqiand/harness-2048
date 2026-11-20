@@ -1,4 +1,5 @@
 /** 回放条：滑条 0..N 步 + 上一步/下一步。只报步序，帧由父层按 replay 前缀派生——不写 localStorage、不碰进行中局面。 */
+// @impl M05.F02.I02 — ReplayBar 回放条步进（function-tree M05.F02）
 
 interface ReplayBarProps {
   /** 总步数（滑条上限=N）。 */

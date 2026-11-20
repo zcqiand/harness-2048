@@ -1,4 +1,5 @@
 /** 计分条：题号大字 + 当前分/个人最佳/连胜天数 + 悔棋按钮（局中可用）。 */
+// @impl M05.F01.I03 — ScoreBar 计分条与悔棋（function-tree M05.F01）
 
 interface ScoreBarProps {
   puzzleId: string;

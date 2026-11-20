@@ -1,4 +1,5 @@
 /** 棋盘纯逻辑模块——骨架层：尺寸常量与空板派生。滑动/合并规则随 ch7 灌入。 */
+// @impl M01.F01.I01 — GRID_SIZE 与 emptyBoard（function-tree M01.F01）
 
 export const GRID_SIZE = 4;
 
